@@ -18,17 +18,16 @@ they’re automatically switted into **swarm mode**.
 Running `docker swarm init` on a Docker host in single-engine mode will switch that node into swarm mode,
 create a new swarm, and make the node the first manager of the swarm. Additional nodes can then be joined to the swarm as workers and managers.  
 
-**Note**: If the datetime of your host did not set, you must set correct timezone before starting following steps (Guide: https://orcacore.com/set-up-time-synchronization-debian-12-bookworm/)
+**Note**: If the datetime of your host did not set, you must set correct timezone before starting following steps (Guide: https://orcacore.com/set-up-time-synchronization-debian-12-bookworm/)  
 
+
+1. Log on to mgr1 and initialize a new swarm.  
 ```
-swarm-manager-01:~# docker swarm init --advertise-addr 172.16.188.11:2377 --listen-addr 172.16.188.11:2377
+swarm-manager-01:~# docker swarm init \
+    --advertise-addr 172.16.188.11:2377 \
+    --listen-addr 172.16.188.11:2377
 Swarm initialized: current node (d0psdx1wo3jt5vk7lgrmrlksv) is now a manager.
 
-To add a worker to this swarm, run the following command:
-
-    docker swarm join --token SWMTKN-1-4l0n6g36c6v4pcb6anecwdawv7cvhs3dfflc1yah3iax5ub91q-28ahbx27zdqwqkoqj9tqbzii1 172.16.188.11:2377
-
-To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
 ```
 
 The command can be broken down as follows:  
@@ -40,4 +39,58 @@ The command can be broken down as follows:
 • `--listen-addr`: This is the IP address that the node will accept swarm traffic on. If not explicitly set, it defaults to the same value as --advertise-addr. If --advertise-addr is a load balancer, you must use --listen-addr to specify a local IP or interface for swarm traffic.  
 
 
+2. List the nodes in the swarm.  
+```
+swarm-manager-01:~# docker node ls
+ID              HOSTNAME           STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+dps...rlksv *   swarm-manager-01   Ready     Active         Leader           26.0.0
 
+```
+
+3. From mgr1 run the docker swarm join-token command to extract the commands and tokens required to add new workers and managers to the swarm.  
+```
+swarm-manager-01:~# docker swarm join-token worker 
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token  SWMTKN-1-0uahebax...c87tu8dx2c 172.16.188.11:2377
+
+```
+```
+swarm-manager-01:~# docker swarm join-token manager 
+To add a manager to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-0uahebax...ue4hv6ps3p 172.16.188.11:2377
+
+```  
+
+**Note**: You should ensure that your join tokens are kept secure, as they’re the
+only thing required to join a node to a swarm!  
+
+
+4. Log on to wrk1 and join it to the swarm using the docker swarm join command with the worker join token.  
+```
+swarm-worker-01:~# docker swarm join \
+    --token SWMTKN-1-0uahebax...c87tu8dx2c \ \
+    172.16.188.11:2377 \
+    --advertise-addr 172.16.188.21:2377 \
+    --listen-addr 172.16.188.21:2377
+
+```  
+
+This node joined a swarm as a worker. The --advertise-addr, and --listen-addr flags optional. I’ve added them as I consider it best practice to be as specific as possible when it comes to network configuration.  
+
+5. Repeat the previous step on wrk2 and wrk3 so that they join the swarm as workers. If you’re specifying the --advertise-addr and --listen-addr flags, make sure you use wrk2 and wrk3’s respective IP addresses.  
+
+6. Log on to mgr2 and join it to the swarm as a manager using the docker swarm join command with the manager join token.  
+```
+swarm-manager-02:~# docker swarm join \
+    --token SWMTKN-1-0uahebax...ue4hv6ps3p \
+    172.16.188.11:2377 \
+    --advertise-addr 172.16.188.12:2377 \
+    --listen-addr 172.16.188.12:2377
+
+```
+
+7. Repeat the previous step on mgr3, remembering to use mgr3’s IP address for the advertise-addr and --listen-addr flags.
+
+8. List the nodes in the swarm by running `docker node ls` from any of the manager nodes in the swarm.
