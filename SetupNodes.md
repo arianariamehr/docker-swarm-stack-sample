@@ -93,4 +93,27 @@ swarm-manager-02:~# docker swarm join \
 
 7. Repeat the previous step on mgr3, remembering to use mgr3’s IP address for the advertise-addr and --listen-addr flags.
 
-8. List the nodes in the swarm by running `docker node ls` from any of the manager nodes in the swarm.
+8. List the nodes in the swarm by running `docker node ls` from any of the manager nodes in the swarm.  
+```
+swarm-manager-01:~# docker node ls
+ID                HOSTNAME           STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+50q7h...aosz2     docker-registry    Ready     Active                          26.0.0
+5k3g4...ci0th     grafana-server     Ready     Active                          26.0.0
+0g4rl...babl8     swarm-manager-01   Ready     Active         Leader           26.0.0
+d21ly...9qzkx *   swarm-manager-02   Ready     Active         Reachable        26.0.0
+2xlti...l0nyp     swarm-manager-03   Ready     Active         Reachable        26.0.0
+8yv0b...wmr67     swarm-worker-01    Ready     Active                          26.0.0
+9mzwf...e4m4n     swarm-worker-02    Ready     Active                          26.0.0
+e62gf...l5wt6     swarm-worker-03    Ready     Active                          26.0.0
+
+```
+
+Congratulations. You’ve just created a 6-node swarm with 3 managers and 3 workers. As part of the process, the Docker Engine on each node was automatically put into swarm mode and the swarm was automatically secured with TLS.
+
+
+**Node**: If you look in the MANAGER STATUS column you’ll see the three manager nodes are showing as either `Reachable` or `Leader`. Nodes with nothing in the MANAGER STATUS column are
+*workers*. Also the asterisk (*) after the ID tells you whitch node you are logged on to and executing commands from.  
+
+
+Now that you have a swarm up and running, let’s take a look at manager high availability (HA).
+
